@@ -11,7 +11,9 @@ personas, and document standards come unchanged from
 This repository adds only what Claude Code needs to run them correctly.
 
 > Community project. Not an official Google or Anthropic product. Upstream
-> officially supports Antigravity and Gemini CLI.
+> officially supports Antigravity and Gemini CLI. Native Claude Code support
+> is proposed upstream in
+> [google/elephant-goldfish-model#101](https://github.com/google/elephant-goldfish-model/pull/101).
 
 ## Install
 
