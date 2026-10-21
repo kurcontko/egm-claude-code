@@ -13,6 +13,7 @@ marker only in the parent prompt. Passes when:
 Usage:
   tests/live_probe.py                    # use the installed egm plugin
   tests/live_probe.py --plugin-dir DIR   # load DIR for this session instead
+  tests/live_probe.py --plugin-dir ../elephant-goldfish-model --command /egm:egm_review
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-PROMPT = """/egm:egm-review This is a targeted integration probe, not a full review. Follow the skill's
+PROMPT = """{command} This is a targeted integration probe, not a full review. Follow the skill's
 Claude Code note and read the guide it points to. Do not run the normal
 five-stage workflow and do not ask questions.
 Parent-only context marker: {parent_marker}. Do not repeat, write, or pass it on.
@@ -63,6 +64,8 @@ def main() -> int:
   parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
   parser.add_argument("--plugin-dir", type=Path)
   parser.add_argument("--model", default="sonnet")
+  parser.add_argument("--command", default="/egm:egm-review",
+                      help="review command; upstream's folder names give /egm:egm_review")
   args = parser.parse_args()
 
   workspace = Path(tempfile.mkdtemp(prefix="egm-probe-")).resolve()
@@ -77,7 +80,7 @@ def main() -> int:
   if args.plugin_dir:
     command += ["--plugin-dir", str(args.plugin_dir.resolve())]
   # Headless mode only parses a slash command when its arguments start on the same line.
-  command += ["--", PROMPT.format(parent_marker=parent_marker)]
+  command += ["--", PROMPT.format(command=args.command, parent_marker=parent_marker)]
   result = subprocess.run(command, cwd=workspace, capture_output=True, text=True, timeout=900)
   if result.returncode != 0:
     print(result.stderr, file=sys.stderr)
@@ -114,7 +117,9 @@ def main() -> int:
         # Newer Claude Code versions deliver a subagent's report through a handback tool call.
         if block.get("type") == "tool_use" and block.get("name") == "SubagentHandback":
           answer = block["input"].get("message", "")
-  reported = set(re.findall(r"\b[A-Z][A-Za-z]+\b", answer))
+  # Tool names come after "(2)", possibly behind a label such as "Tools available:".
+  tool_part = answer.split("(2)", 1)[-1].rsplit(":", 1)[-1]
+  reported = set(re.findall(r"\b[A-Z][A-Za-z]+\b", tool_part))
   checks.append(("reviewer answered UNKNOWN", "UNKNOWN" in answer and "MARKER_" not in answer, ""))
   extra = reported - READ_ONLY - HANDBACK - {"UNKNOWN"}
   checks.append(("reviewer reports only Read, Grep, Glob", not extra and "Read" in reported,
