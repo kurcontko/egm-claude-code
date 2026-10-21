@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Plugin matches the pinned upstream commit plus overlay
+        run: python scripts/sync_upstream.py --check
+
+      - name: Unit tests
+        run: |
+          pip install pytest==8.4.2
+          pytest -q tests
+
+      - name: Claude Code validation
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+          claude plugin validate ./plugins/egm

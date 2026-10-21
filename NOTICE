@@ -1,0 +1,17 @@
+egm-claude-code
+Claude Code packaging of the Elephant-Goldfish Model (EGM).
+
+plugins/egm/ contains files from google/elephant-goldfish-model
+(https://github.com/google/elephant-goldfish-model), Copyright 2026 Google LLC,
+licensed under the Apache License, Version 2.0.
+
+This repository modifies those files as follows (applied by
+scripts/sync_upstream.py, and marked "egm-claude-code overlay" in each file):
+  * agents/*.md (reviewer personas): adds the frontmatter keys `tools`,
+    `model`, and `omitClaudeMd`.
+  * skills/*/SKILL.md: adds a Claude Code note after the frontmatter; skill
+    folders are renamed to each skill's frontmatter `name`.
+  * Adds docs/claude-code.md and .claude-plugin/plugin.json.
+  * Leaves out upstream test fixtures (TEST.md, test_scenarios.yaml).
+
+This is not an official Google or Anthropic product.

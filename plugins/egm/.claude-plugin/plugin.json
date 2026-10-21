@@ -1,0 +1,24 @@
+{
+  "name": "egm",
+  "displayName": "Elephant-Goldfish Model",
+  "version": "0.1.0+0669b27",
+  "description": "Elephant-Goldfish Model: spec-driven development with deep-context drafting and zero-context Goldfish reviews.",
+  "author": {
+    "name": "Google LLC (upstream); Claude Code overlay by Michał Kurc"
+  },
+  "homepage": "https://egm.dev/",
+  "repository": "https://github.com/kurcontko/egm-claude-code",
+  "license": "Apache-2.0",
+  "keywords": [
+    "spec-driven-development",
+    "design-docs",
+    "review",
+    "elephant-goldfish"
+  ],
+  "metadata": {
+    "upstream": {
+      "repository": "https://github.com/google/elephant-goldfish-model",
+      "commit": "0669b270fac7668998bc49d224aea52f36ab8244"
+    }
+  }
+}

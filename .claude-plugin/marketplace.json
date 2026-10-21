@@ -1,0 +1,17 @@
+{
+  "name": "egm-community",
+  "description": "Community Claude Code packaging of Google's Elephant-Goldfish Model (EGM) skills.",
+  "owner": {
+    "name": "Michał Kurc",
+    "url": "https://github.com/kurcontko"
+  },
+  "plugins": [
+    {
+      "name": "egm",
+      "source": "./plugins/egm",
+      "description": "Elephant-Goldfish Model: spec-driven development with deep-context drafting and zero-context Goldfish reviews.",
+      "category": "development",
+      "homepage": "https://egm.dev/"
+    }
+  ]
+}
