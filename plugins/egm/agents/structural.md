@@ -4,7 +4,6 @@ description: Structural Layout Validator and Document Architect persona focused 
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 

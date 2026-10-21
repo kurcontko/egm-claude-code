@@ -4,7 +4,6 @@ description: Naive Reader persona auditing documents with zero assumed instituti
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 

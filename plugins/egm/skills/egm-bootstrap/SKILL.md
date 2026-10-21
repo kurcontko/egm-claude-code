@@ -6,11 +6,11 @@ description: Bootstrap directory README.md files across a repository subtree.
 ---
 
 <!-- Added by the egm-claude-code overlay: https://github.com/kurcontko/egm-claude-code -->
-> **Claude Code:** the EGM plugin root is `${CLAUDE_PLUGIN_ROOT}`. Resolve
-> `agents/`, `resources/`, and `docs/` there, and read
-> `${CLAUDE_PLUGIN_ROOT}/docs/claude-code.md` before anything else. It maps
-> this skill's harness-neutral instructions onto Claude Code tools and keeps
-> Goldfish reviews isolated.
+**Claude Code:** read `agents/`, `resources/`, and `skills/` from the plugin root,
+`${CLAUDE_PLUGIN_ROOT}`. Everything else, including `docs/designs/` and every
+file you write, is in the working directory. Before you start, read
+`${CLAUDE_PLUGIN_ROOT}/docs/claude-code.md` unless you already have in this
+session; it maps these instructions onto Claude Code tools.
 
 # EGM Peanuts and Hay Bootstrap (`egm-bootstrap`)
 

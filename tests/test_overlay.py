@@ -31,20 +31,22 @@ def test_plugin_is_built() -> None:
 @pytest.mark.parametrize("persona", PERSONAS, ids=lambda p: p.stem)
 def test_reviewers_are_read_only_and_skip_claude_md(persona: Path) -> None:
   text = persona.read_text()
-  if name_of(persona) in sync.ORCHESTRATORS:
-    assert sync.frontmatter_value(text, "tools") is None
-    assert sync.OVERLAY_MARK not in text
+  name = name_of(persona)
+  if name in sync.ORCHESTRATORS:
+    expected = sync.ORCHESTRATOR_KEYS.get(name, {}).get("tools")
+    assert sync.frontmatter_value(text, "tools") == expected
+    assert "${CLAUDE_PLUGIN_ROOT}" in text and "egm:egm-zoom-out" in text
     return
   assert sync.frontmatter_value(text, "tools") == "Read, Grep, Glob"
   assert sync.frontmatter_value(text, "omitClaudeMd") == "true"
-  assert sync.frontmatter_value(text, "model") == "inherit"
-  assert sync.frontmatter_value(text, "memory") is None
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.parent.name)
 def test_skills_point_to_the_guide(skill: Path) -> None:
   text = skill.read_text()
   assert "${CLAUDE_PLUGIN_ROOT}/docs/claude-code.md" in text
+  # docs/designs/ is the user's; only agents/, resources/, and skills/ live in the plugin.
+  assert "`docs/designs/`" in text and "`docs/`" not in text
   assert text.count(sync.OVERLAY_MARK) == 1
 
 
@@ -64,10 +66,10 @@ def test_resources_named_by_skills_exist(skill: Path) -> None:
     assert (skill.parent / relative).is_file(), relative
 
 
-def test_guide_names_every_agent_and_skill() -> None:
-  guide = (PLUGIN / "docs" / "claude-code.md").read_text()
+def test_readme_lists_every_command() -> None:
+  readme = (ROOT / "README.md").read_text()
   for skill in SKILLS:
-    assert f"/egm:{skill.parent.name}`" in guide, skill.parent.name
+    assert f"/egm:{skill.parent.name}" in readme, skill.parent.name
 
 
 def test_guide_is_not_named_like_claude_md() -> None:
@@ -90,8 +92,8 @@ def test_overlay_is_idempotent() -> None:
   once = sync.restrict_reviewer(persona)
   assert sync.restrict_reviewer(once) == once
   skill = "---\nname: egm-y\ndescription: d\n---\n\n# Title\n"
-  once = sync.add_skill_note(skill)
-  assert sync.add_skill_note(once) == once
+  once = sync.add_note(skill)
+  assert sync.add_note(once) == once
   assert once.startswith(skill.split("\n# Title")[0])
 
 

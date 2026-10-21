@@ -4,7 +4,6 @@ description: Technical Copy Editor persona focused on clarity, precision, brevit
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 

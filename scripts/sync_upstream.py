@@ -40,16 +40,24 @@ EXCLUDE = ("TEST.md", "test_scenarios.yaml")
 # Every other persona is a Goldfish reviewer and is made read-only, so a new
 # upstream persona fails closed rather than open.
 ORCHESTRATORS = {"egm-bootstrap-orchestrator", "egm-synthesizer"}
-REVIEWER_KEYS = {"tools": "Read, Grep, Glob", "model": "inherit", "omitClaudeMd": "true"}
+REVIEWER_KEYS = {"tools": "Read, Grep, Glob", "omitClaudeMd": "true"}
+# The synthesizer spawns reviewers and writes its report; it needs nothing else.
+ORCHESTRATOR_KEYS = {"egm-synthesizer": {"tools": "Agent, Read, Grep, Glob, Write"}}
 
 OVERLAY_MARK = "egm-claude-code overlay"
 SKILL_NOTE = f"""\
 <!-- Added by the {OVERLAY_MARK}: https://github.com/kurcontko/egm-claude-code -->
-> **Claude Code:** the EGM plugin root is `${{CLAUDE_PLUGIN_ROOT}}`. Resolve
-> `agents/`, `resources/`, and `docs/` there, and read
-> `${{CLAUDE_PLUGIN_ROOT}}/docs/claude-code.md` before anything else. It maps
-> this skill's harness-neutral instructions onto Claude Code tools and keeps
-> Goldfish reviews isolated.
+**Claude Code:** read `agents/`, `resources/`, and `skills/` from the plugin root,
+`${{CLAUDE_PLUGIN_ROOT}}`. Everything else, including `docs/designs/` and every
+file you write, is in the working directory. Before you start, read
+`${{CLAUDE_PLUGIN_ROOT}}/docs/claude-code.md` unless you already have in this
+session; it maps these instructions onto Claude Code tools.
+"""
+ORCHESTRATOR_NOTE = f"""\
+<!-- Added by the {OVERLAY_MARK}: https://github.com/kurcontko/egm-claude-code -->
+**Claude Code:** read `agents/` and `resources/` from the plugin root,
+`${{CLAUDE_PLUGIN_ROOT}}`. Spawn each subagent with the `Agent` tool as a new agent
+of type `egm:<persona name>`, for example `egm:egm-zoom-out`, never as a fork.
 """
 
 FRONTMATTER = re.compile(r"\A---\n(.*?\n)---\n", re.DOTALL)
@@ -76,13 +84,13 @@ def frontmatter_value(text: str, key: str) -> str | None:
   return found.group(1).strip() if found else None
 
 
-def restrict_reviewer(text: str) -> str:
-  """Add the read-only reviewer keys to a persona's frontmatter, keeping any upstream values."""
+def restrict_reviewer(text: str, keys: dict[str, str] = REVIEWER_KEYS) -> str:
+  """Add Claude Code keys to a persona's frontmatter, keeping any upstream values."""
   match = FRONTMATTER.match(text)
   if not match:
     raise ValueError("persona has no frontmatter")
   body = match.group(1)
-  missing = [f"{key}: {value}\n" for key, value in REVIEWER_KEYS.items()
+  missing = [f"{key}: {value}\n" for key, value in keys.items()
              if not re.search(rf"^{key}:", body, re.MULTILINE)]
   if not missing:
     return text
@@ -90,24 +98,29 @@ def restrict_reviewer(text: str) -> str:
   return f"---\n{body}{added}---\n" + text[match.end():]
 
 
-def add_skill_note(text: str) -> str:
-  """Insert the Claude Code pointer right after a skill's frontmatter."""
-  if OVERLAY_MARK in text:
+def add_note(text: str, note: str = SKILL_NOTE) -> str:
+  """Insert a Claude Code note right after the frontmatter, once."""
+  if f"Added by the {OVERLAY_MARK}" in text:
     return text
   match = FRONTMATTER.match(text)
   if not match:
-    raise ValueError("skill has no frontmatter")
-  return text[:match.end()] + "\n" + SKILL_NOTE + text[match.end():]
+    raise ValueError("file has no frontmatter")
+  return text[:match.end()] + "\n" + note + text[match.end():]
 
 
 def apply_overlay(plugin: Path, repository: str, commit: str, upstream: Path) -> None:
   for persona in sorted((plugin / "agents").glob("*.md")):
     text = persona.read_text()
-    if frontmatter_value(text, "name") not in ORCHESTRATORS:
+    name = frontmatter_value(text, "name")
+    if name not in ORCHESTRATORS:
       persona.write_text(restrict_reviewer(text))
+    else:
+      # Orchestrators run as subagents and never see a skill's note, so they get their own.
+      text = add_note(text, ORCHESTRATOR_NOTE)
+      persona.write_text(restrict_reviewer(text, ORCHESTRATOR_KEYS.get(name, {})))
 
   for skill in sorted((plugin / "skills").glob("*/SKILL.md")):
-    skill.write_text(add_skill_note(skill.read_text()))
+    skill.write_text(add_note(skill.read_text()))
     # Claude Code names a plugin skill command after its folder, so egm_review would run as
     # /egm:egm_review. Rename the folder to the frontmatter name to get /egm:egm-review.
     name = frontmatter_value(skill.read_text(), "name")

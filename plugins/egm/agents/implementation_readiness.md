@@ -4,7 +4,6 @@ description: Pragmatic Tech Lead persona verifying that implementation plans con
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 

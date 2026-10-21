@@ -4,7 +4,6 @@ description: Hostile Design Critic persona focused on system architecture, scala
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 

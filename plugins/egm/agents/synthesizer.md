@@ -2,7 +2,14 @@
 name: egm-synthesizer
 description: Intermediate Swarm Compiler and Aggregator coordinating parallel Goldfish reviewers, deduplicating findings, and compiling deliverable reports.
 license: Apache-2.0
+# Claude Code keys added by the egm-claude-code overlay
+tools: Agent, Read, Grep, Glob, Write
 ---
+
+<!-- Added by the egm-claude-code overlay: https://github.com/kurcontko/egm-claude-code -->
+**Claude Code:** read `agents/` and `resources/` from the plugin root,
+`${CLAUDE_PLUGIN_ROOT}`. Spawn each subagent with the `Agent` tool as a new agent
+of type `egm:<persona name>`, for example `egm:egm-zoom-out`, never as a fork.
 
 # Core Mandates (Swarm Compiler & Output Synthesizer)
 

@@ -59,14 +59,17 @@ mechanical overlay:
 
 | Change | Why |
 | --- | --- |
-| Reviewer personas get `tools: Read, Grep, Glob`, `omitClaudeMd: true`, `model: inherit` | Without these, Claude Code subagents can edit files and load your `CLAUDE.md`, so a Goldfish is not really context-free |
-| Each skill gets a note with the resolved `${CLAUDE_PLUGIN_ROOT}` and a pointer to [`docs/claude-code.md`](overlay/claude-code.md) | Installed skills live in the plugin cache, so relative paths would resolve against your project |
-| [`docs/claude-code.md`](overlay/claude-code.md) maps the skills' wording onto Claude Code tools | `invoke_subagent` becomes `Agent` with `egm:egm-<persona>`; forks are ruled out because a fork inherits the whole conversation |
+| Reviewer personas get `tools: Read, Grep, Glob` and `omitClaudeMd: true` | Without these, Claude Code subagents can edit files and load your `CLAUDE.md`, so a Goldfish is not really context-free |
+| The synthesizer and bootstrap orchestrator get a note with the plugin root and the `egm:` agent names; the synthesizer is limited to `Agent, Read, Grep, Glob, Write` | They run as subagents, so they never see a skill's note |
+| Each skill gets a note with the resolved `${CLAUDE_PLUGIN_ROOT}` and a pointer to [`docs/claude-code.md`](overlay/claude-code.md) | Installed skills live in the plugin cache, so `agents/` and `resources/` would otherwise resolve against your project. `docs/designs/` stays in your project |
+| [`docs/claude-code.md`](overlay/claude-code.md) maps the skills' wording onto Claude Code tools | `invoke_subagent` becomes `Agent` with `egm:egm-<persona>`, forks are ruled out because a fork inherits the whole conversation, and chained skills are read from the plugin because the `Skill` tool refuses them |
 | Skill folders are renamed to their frontmatter names (`egm_review` → `egm-review`) | Claude Code names plugin commands after the folder |
 
-Everything else is copied byte for byte. The orchestrator personas
-(`egm-synthesizer`, `egm-bootstrap-orchestrator`) keep their full tool set,
-because they spawn the reviewers.
+Everything else is copied byte for byte. These edits are safe here because
+this plugin only targets Claude Code. Native support proposed upstream in
+[#101](https://github.com/google/elephant-goldfish-model/pull/101) keeps
+`skills/` and `agents/` untouched instead, because Antigravity rejects
+`tools: Read, Grep, Glob` in a shared persona file.
 
 ## Verification
 
@@ -78,7 +81,7 @@ because they spawn the reviewers.
   in a throwaway workspace. It confirms that `/egm:egm-review` reads the guide
   from the plugin root and spawns `egm:egm-zoom-out` as a new agent, not a fork.
   It also confirms that the reviewer sees neither a `CLAUDE.md` marker nor a
-  parent-prompt marker, and that it has only read-only tools.
+  parent-prompt marker, and that it has no write, shell, or agent tools.
 
 CI runs the first two plus `claude plugin validate`. A weekly workflow rebuilds
 from upstream `main` and opens a pull request when upstream changes.

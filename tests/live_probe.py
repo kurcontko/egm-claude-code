@@ -8,7 +8,7 @@ marker only in the parent prompt. Passes when:
   * the skill loads and the parent reads docs/claude-code.md from the plugin root,
   * exactly one Agent call is made, with subagent_type egm:egm-zoom-out (not a fork),
   * the reviewer's transcript contains neither marker,
-  * the reviewer reports only read-only tools.
+  * the reviewer has no tool that can edit files, run commands, or spawn agents.
 
 Usage:
   tests/live_probe.py                    # use the installed egm plugin
@@ -28,8 +28,8 @@ import tempfile
 import uuid
 from pathlib import Path
 
-PROMPT = """{command} This is a targeted integration probe, not a full review. Follow the skill's
-Claude Code note and read the guide it points to. Do not run the normal
+PROMPT = """{command} This is a targeted integration probe, not a full review. Follow the Claude Code
+instructions you were given and read the guide they point to. Do not run the normal
 five-stage workflow and do not ask questions.
 Parent-only context marker: {parent_marker}. Do not repeat, write, or pass it on.
 Spawn exactly one NEW reviewer of the plugin's zoom-out persona type, as the
@@ -41,9 +41,8 @@ review output format.'
 Wait for its result and report it verbatim.
 """
 
-READ_ONLY = {"Read", "Grep", "Glob"}
-# Harness tools a subagent always has for reporting back; they cannot touch the workspace.
-HANDBACK = {"SubagentHandback"}
+# Tools a Goldfish reviewer must not have.
+WRITE_TOOLS = {"Write", "Edit", "NotebookEdit", "Bash", "PowerShell", "Agent"}
 
 
 def events(path: Path) -> list[dict]:
@@ -64,6 +63,8 @@ def main() -> int:
   parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
   parser.add_argument("--plugin-dir", type=Path)
   parser.add_argument("--model", default="sonnet")
+  parser.add_argument("--guide", default="docs/claude-code.md",
+                      help="guide the skill should read; upstream keeps it in docs/harnesses.md")
   parser.add_argument("--command", default="/egm:egm-review",
                       help="review command; upstream's folder names give /egm:egm_review")
   args = parser.parse_args()
@@ -95,8 +96,8 @@ def main() -> int:
 
   checks: list[tuple[str, bool, str]] = []
   guide_reads = [c["input"].get("file_path", "") for c in calls if c["name"] == "Read"
-                 and c["input"].get("file_path", "").endswith("/docs/claude-code.md")]
-  checks.append(("parent read docs/claude-code.md from the plugin root",
+                 and c["input"].get("file_path", "").endswith("/" + args.guide)]
+  checks.append((f"parent read {args.guide} from the plugin root",
                  bool(guide_reads) and not guide_reads[0].startswith(str(workspace)),
                  ", ".join(guide_reads) or "no read"))
   agents = [c for c in calls if c["name"] in ("Agent", "Task")]
@@ -121,9 +122,10 @@ def main() -> int:
   tool_part = answer.split("(2)", 1)[-1].rsplit(":", 1)[-1]
   reported = set(re.findall(r"\b[A-Z][A-Za-z]+\b", tool_part))
   checks.append(("reviewer answered UNKNOWN", "UNKNOWN" in answer and "MARKER_" not in answer, ""))
-  extra = reported - READ_ONLY - HANDBACK - {"UNKNOWN"}
-  checks.append(("reviewer reports only Read, Grep, Glob", not extra and "Read" in reported,
-                 ", ".join(sorted(extra))))
+  forbidden = reported & WRITE_TOOLS
+  checks.append(("reviewer can read but has no write, shell, or agent tools",
+                 "Read" in reported and not forbidden,
+                 ", ".join(sorted(reported - {"UNKNOWN"}))))
 
   print(f"workspace: {workspace}\nsession:   {session}\n"
         f"cost:      ${summary.get('total_cost_usd', 0):.2f}\nreviewer:  {answer.strip()}\n")

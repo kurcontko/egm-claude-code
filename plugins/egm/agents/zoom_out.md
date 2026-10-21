@@ -4,7 +4,6 @@ description: Skeptical Architect persona focused on high-altitude simplicity, mi
 license: Apache-2.0
 # Claude Code keys added by the egm-claude-code overlay
 tools: Read, Grep, Glob
-model: inherit
 omitClaudeMd: true
 ---
 
